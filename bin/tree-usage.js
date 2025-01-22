@@ -2,7 +2,9 @@
 
 'use strict';
 
+const assert = require('node:assert');
 const fs = require('node:fs');
+const path = require('node:path');
 const {BLAKE2b} = require('bcrypto');
 const {Tree, nodes} = require('urkel');
 
@@ -66,7 +68,7 @@ const {
     }
   }
 
-  treeStats.log();
+  treeStats.log(prefix);
 
   await tree.close();
 })().catch((e) => {
@@ -145,6 +147,16 @@ class TotalStats {
       return `${prefix}${name}: ${count.toLocaleString()}, Size: ${formatBytes(size)}`;
     }).join('\n');
   }
+
+  json() {
+    return {
+      totalNodes: this.totalNodes,
+      totalSize: this.totalSize,
+
+      counts: this.counts,
+      sizes: this.sizes
+    };
+  }
 }
 
 class TreeStats {
@@ -211,7 +223,7 @@ class TreeStats {
       this.maxDepth = depth;
   }
 
-  log(options) {
+  log(prefix) {
     console.log(`PerDepth (${this.maxDepth}):`);
     for (let i = 0; i <= this.maxDepth; i++) {
       const stat = this.perDepth.get(i) || new TotalStats();
@@ -222,7 +234,9 @@ class TreeStats {
     console.log('PerFile:');
     for (let i = 1; i <= this.maxFile; i++) {
       const stat = this.perFile.get(i) || new TotalStats();
-      console.log(`File: ${i}`);
+      const fstat = fs.statSync(path.join(prefix, serializeU32(i)));
+      const used = stat.totalSize / fstat.size * 100;
+      console.log(`File: ${i}, ${formatBytes(fstat.size)} Used: ${used.toFixed(2)}%`);
       console.log(stat.format('  '));
     }
 
@@ -262,4 +276,15 @@ function parseArgs(args) {
   }
 
   return parsed;
+}
+
+function serializeU32(num) {
+  assert((num >>> 0) === num);
+
+  let str = num.toString(10);
+
+  while (str.length < 10)
+    str = '0' + str;
+
+  return str;
 }
