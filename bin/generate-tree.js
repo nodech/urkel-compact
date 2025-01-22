@@ -26,7 +26,7 @@ const rand = require('../lib/rand');
 
   console.log(`Generating items ${ITEMS}...`);
   const keys = Array.from({length: ITEMS}, () => rand.randKey(nextRandByte));
-  const getRandKey = () => keys[nextRandByte() % keys.length];
+  const getRandKey = () => keys[rand.randInt(nextRandByte) % keys.length];
 
   const tree = new Tree({
     hash: BLAKE2b,
