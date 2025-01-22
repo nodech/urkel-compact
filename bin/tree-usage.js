@@ -234,9 +234,10 @@ class TreeStats {
     console.log('PerFile:');
     for (let i = 1; i <= this.maxFile; i++) {
       const stat = this.perFile.get(i) || new TotalStats();
-      const fstat = fs.statSync(path.join(prefix, serializeU32(i)));
+      const fname = serializeU32(i);
+      const fstat = fs.statSync(path.join(prefix, fname));
       const used = stat.totalSize / fstat.size * 100;
-      console.log(`File: ${i}, ${formatBytes(fstat.size)} Used: ${used.toFixed(2)}%`);
+      console.log(`File: ${fname}, ${formatBytes(fstat.size)} Used: ${used.toFixed(2)}%`);
       console.log(stat.format('  '));
     }
 
