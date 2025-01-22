@@ -60,7 +60,7 @@ const rand = require('../lib/rand');
 
 function parseArgs(args) {
   const parsed = {};
-  
+
   for (const arg of args) {
     if (arg.startsWith('--')) {
       const [key, value] = arg.slice(2).split('=');
@@ -72,6 +72,6 @@ function parseArgs(args) {
       parsed[key] = true;
     }
   }
-  
+
   return parsed;
 }

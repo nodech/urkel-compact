@@ -21,6 +21,8 @@ const {
   if (!fs.existsSync(prefix))
     throw new Error(`Tree does not exist: ${prefix}`);
 
+  const parsed = parseArgs(process.argv.slice(2));
+
   const tree = new Tree({
     hash: BLAKE2b,
     bits: 256,
@@ -130,6 +132,19 @@ class TotalStats {
 
     this.totalSize += vptr.size;
   }
+
+  format(prefix = '') {
+    const items = [
+      ['Total Nodes', this.totalNodes, this.totalSize],
+      ['Internals', this.counts.internals, this.sizes.internals],
+      ['Leaves', this.counts.leaves, this.sizes.leaves],
+      ['Data', this.counts.data, this.sizes.data]
+    ];
+
+    return items.map(([name, count, size]) => {
+      return `${prefix}${name}: ${count.toLocaleString()}, Size: ${formatBytes(size)}`;
+    }).join('\n');
+  }
 }
 
 class TreeStats {
@@ -196,24 +211,55 @@ class TreeStats {
       this.maxDepth = depth;
   }
 
-  log() {
+  log(options) {
     console.log(`PerDepth (${this.maxDepth}):`);
     for (let i = 0; i <= this.maxDepth; i++) {
       const stat = this.perDepth.get(i) || new TotalStats();
       console.log(`Depth: ${i}`);
-      console.log(stat);
+      console.log(stat.format('  '));
     }
 
     console.log('PerFile:');
     for (let i = 1; i <= this.maxFile; i++) {
       const stat = this.perFile.get(i) || new TotalStats();
       console.log(`File: ${i}`);
-      console.log(stat);
+      console.log(stat.format('  '));
     }
 
     console.log('Total');
-    console.log(this.total);
+    console.log(this.total.format('  '));
 
     console.log(`Resolves: ${this.resolves}, maxDepth: ${this.maxDepth}`);
   }
+}
+
+function formatBytes(bytes, decimals = 2) {
+  if (bytes === 0)
+    return '0 B';
+
+  const units = ['B', 'KiB', 'MiB', 'GiB'];
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const full = units[i] === 'B' ? '' : ` (${bytes.toLocaleString()} bytes)`
+
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${units[i]}${full}`;
+}
+
+function parseArgs(args) {
+  const parsed = {};
+
+  for (const arg of args) {
+    if (arg.startsWith('--')) {
+      const [key, value] = arg.slice(2).split('=');
+      parsed[key] = value || true;
+    }
+
+    else if (arg.startsWith('-')) {
+      const key = arg.slice(1);
+      parsed[key] = true;
+    }
+  }
+
+  return parsed;
 }
