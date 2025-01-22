@@ -2,6 +2,7 @@
 
 'use strict';
 
+const fs = require('node:fs');
 const {BLAKE2b} = require('bcrypto');
 const {Tree, nodes} = require('urkel');
 
@@ -30,6 +31,8 @@ const {
 
   const root = tree.root;
 
+  const files = new Map();
+
   const stack = [
     new IterItem(root, 0, null)
   ];
@@ -37,19 +40,17 @@ const {
   while (stack.length > 0) {
     const {node, ptr, depth} = stack.pop();
 
-    const prefix = '  '.repeat(depth);
-    const log = (value) => {
-      console.log(prefix + value + formatPtr(ptr));
+    if (ptr) {
+      const usage = files.get(ptr.index) || 0;
+      files.set(ptr.index, usage + ptr.size);
     }
 
     switch (node.type()) {
       case NULL: {
-        log('NULL');
         break;
       }
 
       case INTERNAL: {
-        log('Internal: :' + node.prefix);
         const left = node.left;
         stack.push(new IterItem(left, depth + node.prefix.size + 1, null));
         const right = node.right;
@@ -58,8 +59,8 @@ const {
       }
 
       case LEAF: {
-        const key = node.key;
-        log(`Leaf: ${key.toString('hex')} -> value${formatPtr(node.vptr)}}`);
+        const usage = files.get(node.vptr.index) || 0;
+        files.set(node.vptr.index, usage + node.vptr.size);
         break;
       }
 
@@ -70,6 +71,8 @@ const {
       }
     }
   }
+
+  console.log(files);
 
   await tree.close();
 })().catch((e) => {
